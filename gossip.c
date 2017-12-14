@@ -8,6 +8,7 @@
 
 
 #include "networking.h"
+#include "messager.h"
 #include "gossip.h"
 
 #include <event2/event.h>
@@ -53,7 +54,7 @@ void g_init(struct gossiper_s *this) {
 }
 
 /**
- * 扩容，容量增大原来的一半，不检查新的的size是否越界
+ * 扩容，容量增大原来的一半，不检查新的的size是否溢出
  */
 void g_realloc(struct gossiper_s *this) {
 	//
@@ -70,11 +71,20 @@ void g_realloc(struct gossiper_s *this) {
 	this->size = new_size;
 	int i;
 	for (i = 0; i < this->n_host; i++) {
-
+		new_store[i] = this->states[i];
 	}
-
 }
 
 void g_update(struct host_state_s hs, struct gossiper_s *this);
 void g_push(char *back, struct gossiper_s *this);
-void g_start(struct gossiper_s *this);
+
+/**
+ * 发起gossip
+ */
+void g_start(struct gossiper_s *this) {
+	struct messager_s ms[3];
+
+	ms[0].messager_init(this->states[0].host, SRVPORT, &ms[0]);
+	ms[1].messager_init(this->states[1].host, SRVPORT, &ms[1]);
+	ms[2].messager_init(this->states[2].host, SRVPORT, &ms[2]);
+}
