@@ -59,6 +59,19 @@ int tcp_conn(const char *ip, const int port) {
 }
 
 /**
+ * 关闭连接
+ */
+int tcp_close(int fd) {
+	assert (fd >= 0);
+	int status = close(fd);
+	if (status < 0) {
+		fprintf(stderr, "[error]tcp_close: close-%d\n", errno);
+	}
+
+	return status;
+}
+
+/**
  * 客户端接收回调函数
  */
 void client_recv_cb(int fd, short event, void *arg) {
@@ -67,6 +80,9 @@ void client_recv_cb(int fd, short event, void *arg) {
 	if (len < 0) {
 		fprintf(stderr, "[error]client_recv_cb: recv.\n");
 		exit(1);
+	}
+	else if (len == 0) {
+		return ;
 	}
 
 	buf[len] = '\0';
@@ -127,36 +143,25 @@ error:
  */
 void socket_read_cb(int fd, short event, void *arg) {
 	struct raw_data *data = (struct raw_data*)arg;
-	char buf[1024];
+	char *buf = data->read_buf;
 	int i = 0;
 	int len = 0;
 
 	while (1) {
 		len = recv(fd, buf, sizeof(buf), 0);
-		fprintf(stdout, "recv len: %d", len);
-
 		if (len <= 0)
 			break;
 
-		/*
-		for (i = 0; i < len; i++) {
-			if (data->r_used < sizeof(data->read_buf)) {
-				data->read_buf[data->r_used++] = buf[i];
-			}
-		}
-		data->r_pending = data->r_used;
-		*/
-
-		if (strcmp(data->read_buf, "close")) {
-			close(fd);
+		buf[len] = '\0';
+		if (!strcmp(data->read_buf, "close")) {
+			tcp_close(fd);
 			len = 0;
 			break;
 		}
 
-		buf[len] = '\0';
-		// parse(data);
-		fprintf(stdout, "recv: %s", buf);
-		event_add(data->write_event, NULL);
+		fprintf(stdout, "recv: %s\n", buf);
+		parse(data);
+		// event_add(data->write_event, NULL);
 
 		return ;
 	}
@@ -181,12 +186,14 @@ void socket_read_cb(int fd, short event, void *arg) {
 void socket_write_cb(int fd, short event, void *arg) {
 	struct raw_data *data = arg;
 	assert (data->write_buf);
-	int written = 0, pending = strlen(data->read_buf);
+	int written = 0, pending = strlen(data->write_buf);
+
+	// fprintf(stdout, "write_buf: %s\n", data->write_buf);
 
 	while (written < pending) {
-		fprintf(stdout, "written: %d\n", written);
-		fprintf(stdout, "pending: %d\n", pending);
-		ssize_t len = send(fd, data->read_buf + written,
+		// fprintf(stdout, "written: %d\n", written);
+		// fprintf(stdout, "pending: %d\n", pending);
+		ssize_t len = send(fd, data->write_buf + written,
 				         pending - written, 0);
 		if (len < 0) {
 			if (errno == EAGAIN)

@@ -31,19 +31,16 @@ void client() {
 	int sockfd = tcp_conn(ip, port);
 	fprintf(stdout, "sockfd: %d\n", sockfd);
 
-	/*
+
 	struct event_base *base = event_base_new();
 	struct event *read_event = event_new(base, sockfd, EV_READ|EV_PERSIST,
 									client_recv_cb, NULL);
 	struct event *cmd_event = event_new(base, STDIN_FILENO, EV_READ|EV_PERSIST,
 									cmd_cb, (void*)&sockfd);
 
-	// event_add(read_event, NULL);
+	event_add(read_event, NULL);
 	event_add(cmd_event, NULL);
 	event_base_dispatch(base);
-*/
-
-	send(sockfd, msg, strlen(msg) + 1, 0);
 
 	return ;
 }

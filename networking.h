@@ -12,8 +12,9 @@
 #include <event2/event.h>
 
 #define SRVPORT 35696
+#define TESTIP  "127.0.0.1"
 #define MAXBUF  4096
-#define CLOSEFD "close"
+#define CLOSE   "close"
 
 struct raw_data {
 	char   read_buf[MAXBUF];
@@ -34,6 +35,7 @@ struct raw_data* alloc_raw_data(struct event_base *base, int fd);
 void free_raw_data(struct raw_data* data);
 
 int tcp_conn(const char *ip, const int port);
+int tcp_close(int fd);
 void client_recv_cb(int fd, short event, void *arg);
 void socket_read_cb(int fd, short event, void *arg);
 void socket_write_cb(int fd, short event, void *arg);
