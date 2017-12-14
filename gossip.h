@@ -22,38 +22,46 @@ enum HOST_STATE {
  * @host 主机ip
  * @status 状态，ONLINE or OFFLINE
  * @generation 每次重新启动后自增1
+ * @version 每一轮gossip加1
  */
 struct host_state_s {
 	char *host;
 	int status;
-	int generation;
+	uint32_t generation;
+	uint32_t version;
 };
 
 /**
  * 记录所有host的状态，更新时比较顺序
  * generation->version
  * @states 所有host的状态
- * @version 每经历一轮gossip，version自增1
  * @size states的大小
  * @n_host states保存的host的个数，当n_host >= size时调用realloc扩容
  */
 struct gossiper_s {
 	struct host_state_s *states;
-	int version;
-	int size;
-	int n_host;
+	uint32_t size;
+	uint32_t n_host;
 
 	/* 初始化gossiper */
 	void (*gossiper_init) (struct gossiper_s *this);
 	/* states扩容，每次扩大之前size的1/2 */
 	void (*gossiper_realloc) (struct gossiper_s *this);
-	/* 添加host信息 */
-	void (*gossiper_put) (struct host_state_s hs, struct gossiper_s *this);
+	/* 更新host信息 */
+	void (*gossiper_update) (struct host_state_s hs, struct gossiper_s *this);
+	/* 向发起者推送更新的信息 */
+	void (*gossiper_push) (char *back, struct gossiper_s *this);
+	/* 发起新一轮gossip,每次选三个节点 */
+	void (*gossiper_start) (struct gossiper_s *this);
 };
 
+void gossiper_open(struct gossiper_s *this);
 void g_init(struct gossiper_s *this);
 void g_realloc(struct gossiper_s *this);
-void g_put(struct host_state_s hs, struct gossiper_s *this);
+void g_update(struct host_state_s hs, struct gossiper_s *this);
+void g_push(char *back, struct gossiper_s *this);
+void g_start(struct gossiper_s *this);
+
 void handle_gossip_msg(struct raw_data *msg);
 
 
