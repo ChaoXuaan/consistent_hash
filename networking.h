@@ -18,14 +18,14 @@
 
 struct raw_data {
 	char   read_buf[MAXBUF];
-	// size_t r_pending;		// 待写入的长度
-	// size_t r_used;			// 已经使用的长度
-	// size_t r_written;		// 已经写的长度
+	 size_t r_pending;		// 待写入的长度
+	 size_t r_used;			// 已经使用的长度
+	 size_t r_written;		// 已经写的长度
 
 	char   write_buf[MAXBUF];
-	// size_t w_pending;		// 待写入的长度
-	// size_t w_used;			// 已经使用的长度
-	// size_t w_written;		// 已经写的长度
+	 size_t w_pending;		// 待写入的长度
+	 size_t w_used;			// 已经使用的长度
+	 size_t w_written;		// 已经写的长度
 
 	struct event *read_event;
 	struct event *write_event;

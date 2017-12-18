@@ -8,8 +8,8 @@
 
 
 
-#include "../message/messager.h"
-
+#include "messager.h"
+#include "util.h"
 #include "networking.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,17 +18,25 @@
 
 #include <event2/event.h>
 
+struct gossiper_s *g_gossiper;
+
 void client() {
 	struct event_base *base = event_base_new();
 
-	struct messager_s *ms = messager_open();
+	struct messager_s *ms = malloc(sizeof(struct messager_s));
+	messager_open(ms);
 	char back[1024];
 
 	ms->messager_init(TESTIP, SRVPORT, ms);
-	ms->messager_send("gossipp", ms);
+	struct str_s msg = {"abcdef", 6, 6};
+	ms->messager_send(msg, ms);
 
-	ms->messager_recv(back, 1024, ms);
-	fprintf(stdout, "srv back->%s\n", back);
+	struct str_s *ba = malloc(sizeof(struct str_s));
+	ba->data = malloc(sizeof(char) * 1024);
+	ba->len = 1024;
+	ba->used = 0;
+	ms->messager_recv(ba, 1024, ms);
+	fprintf(stdout, "srv back->%s\n", ba->data);
 
 	ms->messager_destroy(ms);
 }

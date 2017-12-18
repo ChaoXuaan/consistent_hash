@@ -148,18 +148,20 @@ void socket_read_cb(int fd, short event, void *arg) {
 	int len = 0;
 
 	while (1) {
-		len = recv(fd, buf, sizeof(buf), 0);
+		memset(data->read_buf, 0, MAXBUF);
+		len = recv(fd, data->read_buf, sizeof(data->read_buf), 0);
+		data->read_buf[len] = '\0';
 		if (len <= 0)
 			break;
 
-		buf[len] = '\0';
 		if (!strcmp(data->read_buf, "close")) {
+			fprintf(stdout, "recv close: %d\n", fd);
 			tcp_close(fd);
 			len = 0;
 			break;
 		}
 
-		fprintf(stdout, "recv: %s\n", buf);
+		// fprintf(stdout, "recv: %s\n", data->read_buf);
 		parse(data);
 		// event_add(data->write_event, NULL);
 
