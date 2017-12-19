@@ -11,6 +11,7 @@
 #include "messager.h"
 #include "util.h"
 #include "networking.h"
+#include "config.h"
 
 #include <event2/event.h>
 #include <event2/util.h>
@@ -84,7 +85,7 @@ void g_init(struct gossiper_s *this) {
 	self.generation = 1;				// generation应该是++
 	self.version = 1;
 	self.status = ONLINE;
-	self.host = "192.168.0.105";		// 将来用配置文件解析
+	self.host = LOCAL_HOST;		// 将来用配置文件解析
 
 	this->states = (struct host_state_s*)malloc(sizeof(struct host_state_s) * 64);
 	this->states[0] = self;

@@ -27,6 +27,11 @@ void parse(struct raw_data *raw) {
 		char *back = "get gossip message";
 		fprintf(stdout, "[info]get gossip message\n");
 		handle_gossip_msg(g_gossiper, raw);
+
+		memset(raw->write_buf, 0, raw->w_used + 1);
+		strncpy(raw->write_buf, back, strlen(back));
+		raw->w_used = strlen(back);
+		event_add(raw->write_event, NULL);
 	} else if (raw->r_used > strlen("on-start") && strncmp("on-start", raw->read_buf, strlen("on-start")) == 0) {
 		/* 启动消息，
 		 * 启动时发送一个只带自身信息的gossip消息，服务端更新之后返回gossip消息 */
@@ -40,11 +45,13 @@ void parse(struct raw_data *raw) {
 
 		memset(raw->write_buf, 0, raw->w_used + 1);
 		strncpy(raw->write_buf, ss->data, ss->used);
+		raw->w_used = ss->used;
 		event_add(raw->write_event, NULL);
 	} else {
 		char *back = "can not recognize the operation.";
-		memset(raw->write_buf, 0, MAXBUF);
-		strcpy(raw->write_buf, back);
+		memset(raw->write_buf, 0, raw->w_used + 1);
+		strncpy(raw->write_buf, back, strlen(back));
+		raw->w_used = strlen(back);
 		event_add(raw->write_event, NULL);
 	}
 }

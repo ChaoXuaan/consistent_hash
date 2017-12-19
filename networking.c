@@ -36,7 +36,7 @@ int tcp_conn(const char *ip, const int port) {
 
 	srv_addr.sin_family = AF_INET;
 	srv_addr.sin_port = htons(port);
-	status = inet_aton(ip, &srv_addr.sin_addr);
+	status = inet_pton(AF_INET, ip, &srv_addr.sin_addr); //inet_aton(ip, &srv_addr.sin_addr);
 	if (status == 0) {
 		fprintf(stderr, "[error]tcp_conn: inet_aton\n");
 		return -1;
@@ -112,7 +112,7 @@ int tcp_init(const int port, const int listen_num) {
 	memset(&srv_addr, 0, sizeof(srv_addr));
 	srv_addr.sin_family = AF_INET;
 	srv_addr.sin_port = htons(port);
-	srv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	srv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	if ((bind(listener, (struct sockaddr*)&srv_addr, sizeof(srv_addr))) < 0) {
 		fprintf(stderr, "[error]tcp_init: bind\n");

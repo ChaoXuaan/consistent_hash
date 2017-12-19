@@ -34,6 +34,13 @@ struct messager_s * messager_open() {
 }
 */
 
+/**
+ * 启动连接，连接成功返回0，失败返回-1
+ * @srv_ip server ip
+ * @port service port
+ * @t
+ * @return 0 on success, -1 on fail
+ */
 int m_init(const char *srv_ip, const int port, struct messager_s *t) {
 	t->ip = srv_ip;
 	t->port = port;

@@ -9,6 +9,7 @@
 #include "gossip.h"
 #include "util.h"
 #include "messager.h"
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,8 +68,8 @@ void client() {
 	tomsg[skip] = '\0';
 	struct str_s ss;
 	ss.data = tomsg;
-	ss.len = skip - 1;
-	ss.used = skip - 1;
+	ss.len = skip;
+	ss.used = skip;
 
 	i = 0, skip = G_HEADER_SIZE;
 	while (*(tomsg + skip) != '\0') {
@@ -80,15 +81,17 @@ void client() {
 	// char *tomsg = g_gossiper->gossiper_cur_msg(g_gossiper);
 	fprintf(stdout, "tomsg = %s-%d-%ld\n", tomsg, i, ss.len);
 
-	ms->messager_init(TESTIP, SRVPORT, ms);
+	if (ms->messager_init(SRV_HOST, SRVPORT, ms) < 0) {
+		return ;
+	}
 	ms->messager_send(ss, ms);
 
-//	struct str_s ss_back;
-//	ss_back.data = malloc(sizeof(char) * 1024);
-//	ss_back.len = 1024;
-//	ss_back.used = 0;
-//	ms->messager_recv(&ss_back, 1024, ms);
-//	fprintf(stdout, "srv back->%s\n", ss_back.data);
+	struct str_s ss_back;
+	ss_back.data = malloc(sizeof(char) * 1024);
+	ss_back.len = 1024;
+	ss_back.used = 0;
+	ms->messager_recv(&ss_back, 1024, ms);
+	fprintf(stdout, "srv back->%s\n", ss_back.data);
 
 	ms->messager_destroy(ms);
 }
