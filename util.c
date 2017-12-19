@@ -22,10 +22,25 @@
 void parse(struct raw_data *raw) {
 	assert (raw);
 
-	if (strlen(raw->read_buf) >= 6 && strncmp("gossip", raw->read_buf, 6) == 0) {
+	if (raw->r_used >= 6 && strncmp("gossip", raw->read_buf, 6) == 0) {
+		/* gossip消息 */
 		char *back = "get gossip message";
 		fprintf(stdout, "[info]get gossip message\n");
 		handle_gossip_msg(g_gossiper, raw);
+	} else if (raw->r_used > strlen("on-start") && strncmp("on-start", raw->read_buf, strlen("on-start")) == 0) {
+		/* 启动消息，
+		 * 启动时发送一个只带自身信息的gossip消息，服务端更新之后返回gossip消息 */
+		char *str = raw->read_buf;
+		int skip = strlen("on-start");
+		int gap = sizeof(struct host_state_s);
+		struct host_state_s hs;
+		memcpy(&hs, str+skip, gap);
+		g_gossiper->gossiper_compare_update(hs, g_gossiper);
+		struct str_s *ss = g_gossiper->gossiper_cur_msg(g_gossiper);
+
+		memset(raw->write_buf, 0, raw->w_used + 1);
+		strncpy(raw->write_buf, ss->data, ss->used);
+		event_add(raw->write_event, NULL);
 	} else {
 		char *back = "can not recognize the operation.";
 		memset(raw->write_buf, 0, MAXBUF);

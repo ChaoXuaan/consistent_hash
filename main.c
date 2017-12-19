@@ -6,3 +6,7 @@
  */
 
 
+struct gossiper_s *g_gossiper;
+
+void on_start();
+void timeout_cb(int fd, short ev, void *arg);

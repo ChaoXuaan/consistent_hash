@@ -176,8 +176,8 @@ struct str_s* g_cur_msg(struct gossiper_s *this) {
 		size += hs_len;
 	}
 	cur[size] = '\0';
-	ss->len = size - 1;
-	ss->used = size - 1;
+	ss->len = size;
+	ss->used = size;
 	return ss;
 }
 

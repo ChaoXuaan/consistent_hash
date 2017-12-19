@@ -150,10 +150,11 @@ void socket_read_cb(int fd, short event, void *arg) {
 	while (1) {
 		memset(data->read_buf, 0, MAXBUF);
 		len = recv(fd, data->read_buf, sizeof(data->read_buf), 0);
-		data->read_buf[len] = '\0';
 		if (len <= 0)
 			break;
 
+		data->read_buf[len] = '\0';
+		data->r_used = len;
 		if (!strcmp(data->read_buf, "close")) {
 			fprintf(stdout, "recv close: %d\n", fd);
 			tcp_close(fd);
@@ -188,7 +189,7 @@ void socket_read_cb(int fd, short event, void *arg) {
 void socket_write_cb(int fd, short event, void *arg) {
 	struct raw_data *data = arg;
 	assert (data->write_buf);
-	int written = 0, pending = strlen(data->write_buf);
+	int written = 0, pending = data->w_used;
 
 	// fprintf(stdout, "write_buf: %s\n", data->write_buf);
 
@@ -249,6 +250,9 @@ struct raw_data* alloc_raw_data(struct event_base *base, int fd) {
 		fprintf(stderr, "[error]alloc_raw_data: malloc\n");
 		return NULL;
 	}
+
+	p_data->r_pending = MAXBUF;
+	p_data->w_pending = MAXBUF;
 
 	p_data->read_event = event_new(base, fd, EV_READ|EV_PERSIST,
 							socket_read_cb, (void*)p_data);

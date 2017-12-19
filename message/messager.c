@@ -59,9 +59,9 @@ void m_send(struct str_s msg, struct messager_s *t) {
 	fprintf(stdout, "[info]m_send success\n");
 }
 
-void m_recv(struct str_s *ret, int ret_len, struct messager_s *t) {
+void m_recv(struct str_s *ret, int len, struct messager_s *t) {
 	while (1) {
-		int len = recv(t->sockfd, ret->data, ret_len, 0);
+		int len = recv(t->sockfd, ret->data, len, 0);
 		if (len > 0) {
 			ret->used = len;
 			ret->data[len] = '\0';
