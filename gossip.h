@@ -15,7 +15,7 @@
 #include "util.h"
 
 #define GOSSIP_HEADER "gossip"
-#define G_HEADER_SIZE  6	 // strlen(HEADER)
+#define G_HEADER_SIZE  6     // strlen(HEADER)
 
 
 enum HOST_STATE {
@@ -65,6 +65,8 @@ struct gossiper_s {
 	int  (*gossiper_compare_update) (struct host_state_s cur, struct gossiper_s *this);
 	/* 打印gossip信息 */
 	void (*gossiper_print) (struct gossiper_s *this);
+	/* 析构函数 */
+	void (*gossiper_destructor) (struct gossiper_s *this);
 };
 
 void gossiper_open(struct gossiper_s *this);
@@ -76,9 +78,10 @@ void g_start(struct gossiper_s *this);
 struct str_s* g_cur_msg(struct gossiper_s *this);
 int  g_compare_update(struct host_state_s cur, struct gossiper_s *this);
 void g_print(struct gossiper_s *this);
+void g_destructor(struct gossiper_s *this);
 
 void handle_gossip_msg(struct gossiper_s *gs, struct raw_data *msg);
-
+// handle_gossip_msg(struct gossiper_s *gs, char *msg)
 
 
 #endif /* GOSSIP_H_ */

@@ -80,8 +80,7 @@ void client_recv_cb(int fd, short event, void *arg) {
 	if (len < 0) {
 		fprintf(stderr, "[error]client_recv_cb: recv.\n");
 		exit(1);
-	}
-	else if (len == 0) {
+	} else if (len == 0) {
 		return ;
 	}
 
@@ -158,6 +157,7 @@ void socket_read_cb(int fd, short event, void *arg) {
 		if (!strcmp(data->read_buf, "close")) {
 			fprintf(stdout, "recv close: %d\n", fd);
 			tcp_close(fd);
+			free_raw_data(data);
 			len = 0;
 			break;
 		}
@@ -240,6 +240,8 @@ void accept_cb(int fd, short event, void *arg) {
 	struct event_base *base = arg;
 	struct raw_data *data;
 	data = alloc_raw_data(base, sockfd);
+	data->cli_addr = client_addr;
+	fprintf(stdout, "[info]client request: %s", inet_ntoa(client_addr.sin_addr));
 	assert(data);
 	event_add(data->read_event, 0);
 }

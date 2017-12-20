@@ -29,6 +29,7 @@ struct raw_data {
 
 	struct event *read_event;
 	struct event *write_event;
+	struct sockaddr_in cli_addr;
 };
 
 struct raw_data* alloc_raw_data(struct event_base *base, int fd);

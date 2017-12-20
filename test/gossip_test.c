@@ -86,8 +86,9 @@ void client() {
 	}
 	ms->messager_send(ss, ms);
 
+	char buf[1024];
 	struct str_s ss_back;
-	ss_back.data = malloc(sizeof(char) * 1024);
+	ss_back.data = buf;
 	ss_back.len = 1024;
 	ss_back.used = 0;
 	ms->messager_recv(&ss_back, 1024, ms);
@@ -120,5 +121,6 @@ int main(int argc, char **argv) {
 		fprintf(stdout, "server\n");
 		server();
 	}
+
 	return 0;
 }

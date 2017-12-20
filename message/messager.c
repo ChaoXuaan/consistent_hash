@@ -19,6 +19,7 @@ void messager_open(struct messager_s *ms) {
 	ms->messager_init = m_init;
 	ms->messager_send = m_send;
 	ms->messager_recv = m_recv;
+	ms->messager_close = m_close;
 	ms->messager_destroy = m_destroy;
 }
 
@@ -63,7 +64,7 @@ void m_send(struct str_s msg, struct messager_s *t) {
 		written += len;
 	}
 
-	fprintf(stdout, "[info]m_send success\n");
+	fprintf(stdout, "[info]m_send success:%s\n", msg.data);
 }
 
 void m_recv(struct str_s *ret, int len, struct messager_s *t) {
@@ -75,6 +76,12 @@ void m_recv(struct str_s *ret, int len, struct messager_s *t) {
 			break;
 		}
 	}
+}
+
+void m_close(struct messager_s *t) {
+    struct str_s close = {"close", 5, 5};
+    t->messager_send(close, t);
+    tcp_close(t->sockfd);
 }
 
 void m_destroy(struct messager_s *t) {

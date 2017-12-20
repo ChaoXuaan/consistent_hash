@@ -37,8 +37,9 @@ void client() {
 	ba->used = 0;
 	ms->messager_recv(ba, 1024, ms);
 	fprintf(stdout, "srv back->%s\n", ba->data);
-
 	ms->messager_destroy(ms);
+	free(ba->data);
+	free(ba);
 }
 
 void server() {

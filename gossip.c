@@ -55,6 +55,7 @@ void gossiper_open(struct gossiper_s *this) {
 	this->gossiper_cur_msg = g_cur_msg;
 	this->gossiper_compare_update = g_compare_update;
 	this->gossiper_print = g_print;
+	this->gossiper_destructor = g_destructor;
 }
 
 /*
@@ -85,7 +86,8 @@ void g_init(struct gossiper_s *this) {
 	self.generation = 1;				// generation应该是++
 	self.version = 1;
 	self.status = ONLINE;
-	self.host = LOCAL_HOST;		// 将来用配置文件解析
+	self.host = malloc(sizeof(char) * (strlen(LOCAL_HOST) + 1));
+	strcpy(self.host, LOCAL_HOST);		// 将来用配置文件解析
 
 	this->states = (struct host_state_s*)malloc(sizeof(struct host_state_s) * 64);
 	this->states[0] = self;
@@ -100,8 +102,9 @@ void g_init(struct gossiper_s *this) {
  */
 int g_realloc(struct gossiper_s *this) {
 	//
-	int new_size = this->size + this->size / 2;
-	if (new_size < 0) {
+	uint32_t new_size = this->size + this->size / 2;
+	if (new_size < this->size) {
+	    fprintf(stderr, "[error]g_realloc: realloc fail.\n");
 		return -1;
 	}
 	struct host_state_s *new_store = (struct host_state_s*)
@@ -160,6 +163,7 @@ int g_push(struct host_state_s hs, struct gossiper_s *this) {
  * @return gossip msg
  */
 struct str_s* g_cur_msg(struct gossiper_s *this) {
+//    this->states[0].version++;
 	struct str_s *ss = malloc(sizeof(struct str_s));
 	char* header = GOSSIP_HEADER;
 	const int header_length = G_HEADER_SIZE;
@@ -188,31 +192,44 @@ struct str_s* g_cur_msg(struct gossiper_s *this) {
  * @return void
  */
 void g_start(struct gossiper_s *this) {
-	this->states[0].version++;
+    this->states[0].status = ONLINE;
+    this->states[0].version++;
 
 	struct messager_s ms[3];
 	int i, idx, pre[3] = {0};
 	for (i = 0; i < 3;i++) {
 		messager_open(&ms[i]);
 	}
-
+	/* host个数超过4个，随机选三个，应该有一个是seed,这里还没有实现 */
 	if (this->n_host > 4) {
 		for (i = 0; i < 3; i++) {
 			do {
 				idx = get_rand(this->n_host);
 			} while (idx != 0 && idx != pre[0] && idx != pre[1] && idx != pre[2]);
 			pre[i] = idx;
-			ms[i].messager_init(this->states[idx].host, SRVPORT, &ms[i]);
-			struct str_s *cur_msg = this->gossiper_cur_msg(this);
-			ms[i].messager_send(*cur_msg, &ms[i]);
-			ms[i].messager_destroy(&ms[i]);
+			if (ms[i].messager_init(this->states[idx].host, SRVPORT, &ms[i]) < 0) {
+			    this->states[idx].status=OFFLINE;
+			    this->states[idx].version++;
+			} else {
+			    struct str_s *cur_msg = this->gossiper_cur_msg(this);
+                ms[i].messager_send(*cur_msg, &ms[i]);
+                ms[i].messager_close(&ms[i]);
+                free(cur_msg);
+			}
+
 		}
 	} else {
 		for (i = 1; i < this->n_host; i++) {
-			ms[i - 1].messager_init(this->states[i].host, SRVPORT, &ms[i - 1]);
-			struct str_s *cur_msg = this->gossiper_cur_msg(this);
-			ms[i - 1].messager_send(*cur_msg, &ms[i - 1]);
-			ms[i - 1].messager_destroy(&ms[i - 1]);
+            if (ms[i - 1].messager_init(this->states[i].host, SRVPORT,
+                    &ms[i - 1]) < 0) {
+                this->states[i].status = OFFLINE;
+                this->states[i].version++;
+			} else {
+                struct str_s *cur_msg = this->gossiper_cur_msg(this);
+                ms[i - 1].messager_send(*cur_msg, &ms[i - 1]);
+                ms[i - 1].messager_close(&ms[i - 1]);
+                free(cur_msg);
+			}
 		}
 	}
 }
@@ -258,4 +275,9 @@ void g_print(struct gossiper_s *this) {
 		fprintf(stdout, "[%s,%s,gen=%d,ver=%d]\n", this->states[i].host, this->states[i].status == ONLINE ? "online" : "offline",
 									this->states[i].generation, this->states[i].version);
 	}
+}
+
+void g_destructor(struct gossiper_s *this) {
+    free(this->states);
+    free(this);
 }
