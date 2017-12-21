@@ -16,9 +16,9 @@
 #include <stdint.h>
 
 struct chash_host {
-	char *ipv4;
-	char name[64];
+	char ipv4[16];
 	unsigned long hash;
+	char name[64];
 };
 
 struct chash_store_s {

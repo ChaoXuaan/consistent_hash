@@ -38,7 +38,7 @@ int tcp_conn(const char *ip, const int port) {
 	srv_addr.sin_port = htons(port);
 	status = inet_pton(AF_INET, ip, &srv_addr.sin_addr); //inet_aton(ip, &srv_addr.sin_addr);
 	if (status == 0) {
-		fprintf(stderr, "[error]tcp_conn: inet_aton\n");
+		fprintf(stderr, "[error]tcp_conn: inet_aton(%s)\n", ip);
 		return -1;
 	}
 
@@ -157,7 +157,6 @@ void socket_read_cb(int fd, short event, void *arg) {
 		if (!strcmp(data->read_buf, "close")) {
 			fprintf(stdout, "recv close: %d\n", fd);
 			tcp_close(fd);
-			free_raw_data(data);
 			len = 0;
 			break;
 		}
@@ -169,7 +168,7 @@ void socket_read_cb(int fd, short event, void *arg) {
 		return ;
 	}
 
-	if (len == 0) {
+	if (len == 0 && data) {
 		free_raw_data(data);
 	}
 	else if (len < 0) {
@@ -281,5 +280,6 @@ void free_raw_data(struct raw_data *data) {
 	event_free(data->read_event);
 	event_free(data->write_event);
 	free(data);
+	data = NULL;
 }
 

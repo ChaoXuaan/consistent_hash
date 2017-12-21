@@ -208,7 +208,9 @@ void g_start(struct gossiper_s *this) {
 			} while (idx != 0 && idx != pre[0] && idx != pre[1] && idx != pre[2]);
 			pre[i] = idx;
 
+			fprintf(stdout, "[info]g_start: send gossip to %s\n", this->states[i].host);
 			if (ms[i].messager_init(this->states[idx].host, SRVPORT, &ms[i]) < 0) {
+				fprintf(stdout, "[error]g_start: mark %s is offline\n", this->states[i].host);
 			    this->states[idx].status=OFFLINE;
 			    this->states[idx].version++;
 			} else {
@@ -219,13 +221,16 @@ void g_start(struct gossiper_s *this) {
                 ms[i].messager_recv(&ss, ss.len, &ms[i]);
                 ms[i].messager_close(&ms[i]);
                 free(cur_msg);
+                fprintf(stdout, "[info]g_start: gossip with %s successful\n", this->states[i].host);
 			}
 
 		}
 	} else {
 		for (i = 1; i < this->n_host; i++) {
+			fprintf(stdout, "[info]g_start: send gossip to %s\n", this->states[i].host);
             if (ms[i - 1].messager_init(this->states[i].host, SRVPORT,
                     &ms[i - 1]) < 0) {
+            	fprintf(stdout, "[error]g_start: mark %s is offline\n", this->states[i].host);
                 this->states[i].status = OFFLINE;
                 this->states[i].version++;
 			} else {
@@ -236,6 +241,7 @@ void g_start(struct gossiper_s *this) {
                 ms[i].messager_recv(&ss, ss.len, &ms[i]);
                 ms[i - 1].messager_close(&ms[i - 1]);
                 free(cur_msg);
+                fprintf(stdout, "[info]g_start: gossip with %s successful\n", this->states[i].host);
 			}
 		}
 	}

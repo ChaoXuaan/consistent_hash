@@ -103,6 +103,7 @@ int  chash_node_insert(struct chash_store_s *t) {
         char *pre_host = t->get_pre_host(LOCAL_HOST, t);
         assert (pre_host);
         if (strcmp(pre_host, LOCAL_HOST) == 0) {
+            fprintf(stdout, "[info]chash_node_insert: has no pre host, do not need to migrate\n");
             return 0;
         }
 
@@ -201,7 +202,7 @@ void chash_node_sort(struct chash_store_s *t) {
  */
 int chash_host_push(char *ip, struct chash_store_s *t) {
     struct chash_host host;
-    host.ipv4 = ip;
+    strcpy(host.ipv4, ip);
     host.hash = t->host_hash(ip, t);
 
     if (t->n_host == 0) {
@@ -210,6 +211,7 @@ int chash_host_push(char *ip, struct chash_store_s *t) {
         return 0;
     }
 
+    /* 找到插入的位置 */
     unsigned int i;
     for (i = 0; i < t->n_host; i++) {
         if (host.hash == t->hosts[i].hash) {
@@ -241,7 +243,7 @@ int chash_host_push(char *ip, struct chash_store_s *t) {
  */
 int chash_host_delete(char *ip, struct chash_store_s *t) {
     struct chash_host host;
-    host.ipv4 = ip;
+    strcpy(host.ipv4, ip);
     host.hash = t->host_hash(ip, t);
     unsigned int i;
     for (i = 0; i < t->n_host; i++) {
@@ -268,7 +270,7 @@ int chash_host_delete(char *ip, struct chash_store_s *t) {
  */
 int  chash_host_find(struct chash_host ch, struct chash_store_s *t) {
     struct chash_host host;
-    host.ipv4 = ch.ipv4;
+    strcpy(host.ipv4, ch.ipv4);
     host.hash = t->host_hash(host.ipv4, t);
     unsigned int i;
     for (i = 0; i < t->n_host; i++) {
@@ -288,7 +290,7 @@ int  chash_host_find(struct chash_host ch, struct chash_store_s *t) {
  */
 char* chash_pre_host(char *ip, struct chash_store_s *t) {
     struct chash_host host;
-    host.ipv4 = ip;
+    strcpy(host.ipv4, ip);
     host.hash = t->host_hash(ip, t);
     unsigned int i;
     for (i = 0; i < t->n_host; i++) {
@@ -372,7 +374,7 @@ int chash_value_put(int v, struct chash_store_s *t) {
     } else {
         /* 插入的数据不属于本节点，发送给对应节点 */
         fprintf(stdout,
-                "[info]chash_value_put: value does not belong to this node, send to %s",
+                "[info]chash_value_put: value does not belong to this node, send to %s\n",
                 t->hosts[b].ipv4);
         char data_insert[64] = DATA_INSERT;
         memcpy(data_insert + strlen(DATA_INSERT), &v, sizeof(int));
@@ -523,7 +525,7 @@ int host_handler(struct chash_store_s *t, char *s) {
  */
 int  chash_cnt_belongs2(char *host, struct chash_store_s *t) {
     struct chash_host node;
-    node.ipv4 = host;
+    strcpy(node.ipv4, host);
     node.hash = t->host_hash(host, t);
 
     int i, cnt = 0;

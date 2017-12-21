@@ -51,8 +51,7 @@ gossip_test: test/gossip_test.o $(OBJS)
 	$(CC) $(CFLAGS) -o test/gossip_test test/gossip_test.o $(OBJS) $(LIBS)
 	
 gdb_gossip_test: test/gossip_test.c
-	$(CC) $(CFLAGS) -g -o test/gdb_gossip_test test/gossip_test.c message/messager.c   \
-	networking.c util.c gossip.c -levent
+	$(CC) $(CFLAGS) -g -o test/gdb_gossip_test test/gossip_test.c $(SRC) $(LIBS)
 	
 chash_test.o: test/consistent_hash_test.c
 	$(CC) $(CFLAGS) -c -o test/chash_test.o test/consistent_hash_test.c

@@ -9,6 +9,7 @@
 #include "gossip.h"
 #include "util.h"
 #include "message/messager.h"
+#include "chash/chash.h"
 #include "config.h"
 
 #include <stdio.h>
@@ -29,7 +30,7 @@ void g_test() {
 	int i, gen = 0, ver_rand = 10;
 
 	for (i = 0; i < 5; i++) {
-		hs[i].host = ip[i];
+		strcpy(hs[i].host, ip[i]);
 		hs[i].generation = gen;
 		hs[i].version = get_rand(ver_rand);
 		int s = get_rand(2);
@@ -55,7 +56,7 @@ void client() {
 	int hs_len = sizeof(struct host_state_s);
 	int i, gen = 0, ver_rand = 10;
 	for (i = 0; i < 5; i++) {
-		hs[i].host = ip[i];
+		strcpy(hs[i].host, ip[i]);
 		hs[i].generation = gen;
 		hs[i].version = get_rand(ver_rand);
 		int s = get_rand(2);
@@ -114,6 +115,10 @@ int main(int argc, char **argv) {
 	g_gossiper = malloc(sizeof(struct gossiper_s));
 	gossiper_open(g_gossiper);
 	g_gossiper->gossiper_init(g_gossiper);
+
+	ch_store = malloc(sizeof(struct chash_store_s));
+	chash_store_open(ch_store);
+	ch_store->chash_store_init(g_gossiper, ch_store);
 
 	if (argc > 1 && !strcmp(argv[1], "-c")) {
 		fprintf(stdout, "client\n");

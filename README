@@ -1,0 +1,15 @@
+一致性哈希环，实现数据的插入、删除、打印，没有实现的功能是查找、范围查找，目前插入数据为int型.
+节点之间采用gossip维护集群状态
+
+网络库采用libevent，需要提前安装libevent库，Ubuntu下安装步骤：
+1. 安装autoconf，sudo apt-get install autoconf
+2. 下载libevent源码编译，http://libevent.org/，https://github.com/nmathewson/Libevent
+3. 编译步骤：
+ $ ./configure
+ $ make
+ $ make verify   # (optional)
+ $ sudo make install
+
+哈希函数采用openssl的md5，Ubuntu安装ssl库：sudo apt-get install libssl-dev
+
+链接时需要指明链接的库：-levent -lcrypto

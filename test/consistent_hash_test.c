@@ -22,6 +22,8 @@ struct gossiper_s *g_gossiper;
 
 void client() {
     ch_store->node_insert(ch_store);
+    ch_store->value_put(5, ch_store);
+    ch_store->value_print(ch_store);
 }
 
 void server() {
