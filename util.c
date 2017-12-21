@@ -48,7 +48,7 @@ void parse(struct raw_data *raw) {
 //        free(ss);
 //        event_add(raw->write_event, NULL);
 
-//      handle_gossip_msg(g_gossiper, raw);
+//        handle_gossip_msg(g_gossiper, raw);
 	    char *back = "get gossip message";
 		memset(raw->write_buf, 0, raw->w_used + 1);
 		strncpy(raw->write_buf, back, strlen(back));

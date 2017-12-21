@@ -86,7 +86,7 @@ void g_init(struct gossiper_s *this) {
 	self.generation = 1;				// generation应该是++
 	self.version = 1;
 	self.status = ONLINE;
-	self.host = malloc(sizeof(char) * (strlen(LOCAL_HOST) + 1));
+//	self.host = malloc(sizeof(char) * (strlen(LOCAL_HOST) + 1));
 	strcpy(self.host, LOCAL_HOST);		// 将来用配置文件解析
 
 	this->states = (struct host_state_s*)malloc(sizeof(struct host_state_s) * 64);
@@ -251,6 +251,7 @@ void g_start(struct gossiper_s *this) {
  */
 int  g_compare_update(struct host_state_s cur, struct gossiper_s *this) {
 	int i, status;
+
 	for (i = 0 ; i < this->n_host; i++) {
 		status = strcmp(cur.host, this->states[i].host);
 		if (!status && cur.generation > this->states[i].generation) {
@@ -260,8 +261,14 @@ int  g_compare_update(struct host_state_s cur, struct gossiper_s *this) {
 				cur.version > this->states[i].version) {
 			this->gossiper_update(cur, i, this);
 			return 0;
+		} else if (!status){
+		    /* 首先更新，有可能不如该节点信息新 */
+		    break;
 		}
 	}
+
+	if (i < this->n_host)
+	    return 0;
 
 	status = this->gossiper_push(cur, this);
 	if (status < 0)

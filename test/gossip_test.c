@@ -8,7 +8,7 @@
 
 #include "gossip.h"
 #include "util.h"
-#include "messager.h"
+#include "message/messager.h"
 #include "config.h"
 
 #include <stdio.h>
@@ -16,6 +16,7 @@
 #include <string.h>
 
 struct gossiper_s *g_gossiper;
+struct chash_store_s *ch_store;
 char *ip[5] = { "192.168.0.111", "192.168.0.112", "192.168.0.113",
 			"192.168.0.114", "192.168.0.115" };
 

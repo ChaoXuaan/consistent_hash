@@ -83,10 +83,6 @@ int  chash_node_insert(struct chash_store_s *t) {
     /* 发送node_insert:gossip消息 */
     fprintf(stdout, "[info]chash_node_insert: send node_insert msg\n");
     ms.messager_send(*ss, &ms);
-    free(g_msg->data);
-    free(g_msg);
-    free(ss->data);
-    free(ss);
 
     /* 收到gossip消息 */
     fprintf(stdout, "[info]chash_node_insert:waiting receive gossip msg\n");
@@ -111,6 +107,10 @@ int  chash_node_insert(struct chash_store_s *t) {
         }
 
         /* 发送 insert_migrate+gossip 消息 */
+        free(g_msg->data);
+        free(g_msg);
+        free(ss->data);
+        free(ss);
         fprintf(stdout,
                 "[info]chash_node_insert: send data_migrate msg, pre node is %s\n",
                 pre_host);
@@ -503,7 +503,6 @@ void chash_destructor(struct chash_store_s *t) {
 int host_handler(struct chash_store_s *t, char *s) {
     uint32_t skip = 0;
     int gap = sizeof(struct host_state_s);
-
     while (*(s + skip) != '\0') {
         struct host_state_s hs;
         memcpy(&hs, s+skip, gap);
@@ -515,6 +514,7 @@ int host_handler(struct chash_store_s *t, char *s) {
         skip += gap;
     }
 
+    t->gossiper->gossiper_print(t->gossiper);
     return 0;
 }
 

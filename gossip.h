@@ -31,7 +31,7 @@ enum HOST_STATE {
  * @version 每一轮gossip加1
  */
 struct host_state_s {
-	char *host;
+	char host[16];
 	int status;
 	uint32_t generation;
 	uint32_t version;
