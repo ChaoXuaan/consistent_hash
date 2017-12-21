@@ -5,7 +5,6 @@
  *      Author: dmcl216
  */
 
-
 #include "gossip.h"
 #include "config.h"
 #include "message/messager.h"

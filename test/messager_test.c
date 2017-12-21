@@ -5,9 +5,6 @@
  *      Author: dmcl216
  */
 
-
-
-
 #include "messager.h"
 #include "util.h"
 #include "networking.h"

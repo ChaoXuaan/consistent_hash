@@ -5,9 +5,6 @@
  *      Author: dmcl216
  */
 
-
-
-
 #include "networking.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,5 +67,5 @@ int main(int argc, char **argv) {
 		server();
 	}
 
-
+	return 0;
 }

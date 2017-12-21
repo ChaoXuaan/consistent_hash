@@ -5,8 +5,6 @@
  *      Author: dmcl216
  */
 
-
-
 #include "util.h"
 #include "config.h"
 #include "gossip.h"

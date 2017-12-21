@@ -282,4 +282,3 @@ void free_raw_data(struct raw_data *data) {
 	free(data);
 	data = NULL;
 }
-
