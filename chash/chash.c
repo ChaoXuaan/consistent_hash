@@ -5,9 +5,11 @@
  *      Author: dmcl216
  */
 
-#include "chash.h"
+#include "chash/chash.h"
+#include "util.h"
 #include "config.h"
-#include "messager.h"
+#include "gossip.h"
+#include "message/messager.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +17,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <assert.h>
+#include <openssl/md5.h>
 
 void chash_store_open(struct chash_store_s *t) {
     t->chash_store_init = chash_store_init;
@@ -25,18 +28,18 @@ void chash_store_open(struct chash_store_s *t) {
     t->host_delete = chash_host_delete;
     t->host_find = chash_host_find;
     t->get_pre_host = chash_pre_host;
-    t->host_md5 = chash_host_md5;
+    t->host_hash = chash_host_hash;
     t->value_put = chash_value_put;
     t->value_get = chash_value_get;
     t->value_delete = chash_value_delete;
     t->value_update = chash_value_update;
     t->value_store_realloc = chash_value_realloc;
     t->value_sort = chash_value_sort;
-    t->value_md5 = chash_value_md5;
+    t->value_hash = chash_value_hash;
     t->chash_store_destructor = chash_destructor;
     t->cnt_belongs2 = chash_cnt_belongs2;
     t->data_belongs2 = chash_data_belongs2;
-    t->value_print = chash_value_printf;
+    t->value_print = chash_value_print;
 }
 
 void chash_store_init(struct gossiper_s *gs, struct chash_store_s *t) {
@@ -45,8 +48,7 @@ void chash_store_init(struct gossiper_s *gs, struct chash_store_s *t) {
     t->value_store = malloc(sizeof(struct value_store_s) * 1024);
     t->space = 1024;
     t->n_value = 0;
-    t->n_host = 1;
-
+    t->n_host = 0;
     char *ip = malloc(sizeof(char) * (strlen(LOCAL_HOST) + 1));
     strcpy(ip, LOCAL_HOST);
     t->host_push(ip, t);
@@ -78,7 +80,8 @@ int  chash_node_insert(struct chash_store_s *t) {
         return -1;
     }
 
-    /* 发送node_insert:localhost消息 */
+    /* 发送node_insert:gossip消息 */
+    fprintf(stdout, "[info]chash_node_insert: send node_insert msg\n");
     ms.messager_send(*ss, &ms);
     free(g_msg->data);
     free(g_msg);
@@ -86,29 +89,31 @@ int  chash_node_insert(struct chash_store_s *t) {
     free(ss);
 
     /* 收到gossip消息 */
+    fprintf(stdout, "[info]chash_node_insert:waiting receive gossip msg\n");
     struct str_s ss_back;
     ss_back.data = malloc(sizeof(char) * 4096);
     ss_back.len = 4096;
     ss_back.used = 0;
-    ms->messager_recv(&ss_back, ss_back.len, ms);
-    free(ss_back.data);
-    ss_back->len = 0;
-    ss_back.used = 0;
+    ms.messager_recv(&ss_back, ss_back.len, &ms);
     ms.messager_close(&ms);
     /* 解析 */
+    fprintf(stdout, "[info]chash_node_insert: resolve gossip msg\n");
     if (ss_back.used > G_HEADER_SIZE
-            && strncmp(ss_back, GOSSIP_HEADER, G_HEADER_SIZE) == 0) {
+            && strncmp(ss_back.data, GOSSIP_HEADER, G_HEADER_SIZE) == 0) {
         char *str = ss_back.data + G_HEADER_SIZE;
         host_handler(t, str);
 
-
         /* data migrate */
         char *pre_host = t->get_pre_host(LOCAL_HOST, t);
+        assert (pre_host);
         if (strcmp(pre_host, LOCAL_HOST) == 0) {
             return 0;
         }
 
         /* 发送 insert_migrate+gossip 消息 */
+        fprintf(stdout,
+                "[info]chash_node_insert: send data_migrate msg, pre node is %s\n",
+                pre_host);
         g_msg = t->gossiper->gossiper_cur_msg(t->gossiper);
         g_len = g_msg->used - G_HEADER_SIZE;
         ss = malloc(sizeof(struct str_s));
@@ -123,14 +128,17 @@ int  chash_node_insert(struct chash_store_s *t) {
             return -1;
         }
 
-        ms.messager_send(ss, &ms);
+        ms.messager_send(*ss, &ms);
 
         /* 接受迁移数据 */
-        struct str_s ss_back;
+        fprintf(stdout,"[info]chash_node_insert: receive migrated data\n");
+        free(ss_back.data);
+        ss_back.len = 0;
+        ss_back.used = 0;
         ss_back.data = malloc(sizeof(char) * 4096);
         ss_back.len = 4096;
         ss_back.used = 0;
-        ms->messager_recv(&ss_back, ss_back.len, &ms);
+        ms.messager_recv(&ss_back, ss_back.len, &ms);
         if (ss_back.used == 0) {
             fprintf(stdout, "[info]chash_node_insert: has no data to migrate\n");
             return 0;
@@ -139,12 +147,23 @@ int  chash_node_insert(struct chash_store_s *t) {
         int *arr = malloc(sizeof(char) * ss_back.used);
         assert (sizeof(char) * ss_back.used % sizeof(int) == 0);
         int size = sizeof(char) * ss_back.used / sizeof(int);
-        memcpy(arr, ss_back, sizeof(char)*ss_back.used);
+        memcpy(arr, ss_back.data, sizeof(char)*ss_back.used);
         int i = 0;
+        fprintf(stdout, "[info]chash_node_insert: migrated data as followed:\n");
         for (i = 0; i < size; i++) {
+            fprintf(stdout, "%d ", arr[i]);
             t->value_put(arr[i], t);
         }
+        fprintf(stdout, "\n");
         ms.messager_close(&ms);
+
+        free(g_msg->data);
+        free(g_msg);
+        free(ss->data);
+        free(ss);
+        free(ss_back.data);
+        ss_back.len = 0;
+        ss_back.used = 0;
         return 0;
 
     } else {
@@ -175,7 +194,7 @@ void chash_node_sort(struct chash_store_s *t) {
 }
 
 /**
- * 根据md5值按序插入节点
+ * 根据hash值按序插入节点
  * @ip 待插入节点的ip
  * @t this指针
  * @return 0 on success, -1 on fail
@@ -183,12 +202,19 @@ void chash_node_sort(struct chash_store_s *t) {
 int chash_host_push(char *ip, struct chash_store_s *t) {
     struct chash_host host;
     host.ipv4 = ip;
-    host.md5 = t->host_md5(ip, t);
+    host.hash = t->host_hash(ip, t);
+
+    if (t->n_host == 0) {
+        t->hosts[0] = host;
+        t->n_host++;
+        return 0;
+    }
+
     unsigned int i;
     for (i = 0; i < t->n_host; i++) {
-        if (host.md5 == t->hosts[i].md5) {
+        if (host.hash == t->hosts[i].hash) {
             return 0;
-        } else if (host.md5 < t->hosts[i].md5) {
+        } else if (host.hash < t->hosts[i].hash) {
             break;
         }
     }
@@ -216,10 +242,10 @@ int chash_host_push(char *ip, struct chash_store_s *t) {
 int chash_host_delete(char *ip, struct chash_store_s *t) {
     struct chash_host host;
     host.ipv4 = ip;
-    host.md5 = t->host_md5(ip, t);
+    host.hash = t->host_hash(ip, t);
     unsigned int i;
     for (i = 0; i < t->n_host; i++) {
-        if (host.md5 == t->hosts[i].md5) {
+        if (host.hash == t->hosts[i].hash) {
             break;
         }
     }
@@ -242,11 +268,11 @@ int chash_host_delete(char *ip, struct chash_store_s *t) {
  */
 int  chash_host_find(struct chash_host ch, struct chash_store_s *t) {
     struct chash_host host;
-    host.ipv4 = ip;
-    host.md5 = t->host_md5(ip, t);
+    host.ipv4 = ch.ipv4;
+    host.hash = t->host_hash(host.ipv4, t);
     unsigned int i;
     for (i = 0; i < t->n_host; i++) {
-        if (host.md5 == t->hosts[i].md5) {
+        if (host.hash == t->hosts[i].hash) {
             return i;
         }
     }
@@ -263,10 +289,10 @@ int  chash_host_find(struct chash_host ch, struct chash_store_s *t) {
 char* chash_pre_host(char *ip, struct chash_store_s *t) {
     struct chash_host host;
     host.ipv4 = ip;
-    host.md5 = t->host_md5(ip, t);
+    host.hash = t->host_hash(ip, t);
     unsigned int i;
     for (i = 0; i < t->n_host; i++) {
-        if (host.md5 == t->hosts[i].md5) {
+        if (host.hash == t->hosts[i].hash) {
             break;
         }
     }
@@ -275,11 +301,13 @@ char* chash_pre_host(char *ip, struct chash_store_s *t) {
         return NULL;
     } else {
         int idx = (i + t->n_host - 1) % t->n_host;
-        return t->hosts[idx];
+        return t->hosts[idx].ipv4;
     }
 }
 
-long chash_host_md5(char *ip, struct chash_store_s *t);
+unsigned long chash_host_hash(char *ip, struct chash_store_s *t) {
+    return get_md5(ip);
+}
 
 /**
  * 扩容
@@ -288,7 +316,7 @@ long chash_host_md5(char *ip, struct chash_store_s *t);
  */
 int chash_value_realloc(struct chash_store_s *t) {
     unsigned int new_size = t->space + t->space / 2;
-    if (new_size > VALUE_MAX_NUM) {
+    if (new_size > VALUE_MAX_NUM || new_size < t->space) {
         fprintf(stdout, "[error]chash_value_realloc: realloc failure\n");
         return -1;
     }
@@ -311,7 +339,7 @@ int chash_value_realloc(struct chash_store_s *t) {
 int chash_value_put(int v, struct chash_store_s *t) {
     struct value_store_s vs;
     vs.value = v;
-    vs.md5 = t->value_md5(v, t);
+    vs.hash = t->value_hash(v, t);
     uint32_t b, i, j;
 
     /* 找到对应节点 */
@@ -325,10 +353,10 @@ int chash_value_put(int v, struct chash_store_s *t) {
 
         for (i = 0; i < t->n_value; i++) {
             /* 更新 */
-            if (vs.md5 == t->value_store[i].md5) {
+            if (vs.hash == t->value_store[i].hash) {
                 t->value_store[i].value = v;
                 return 0;
-            } else if (vs.md5 < t->value_store[i].md5) {
+            } else if (vs.hash < t->value_store[i].hash) {
                 break;
             }
         }
@@ -338,10 +366,14 @@ int chash_value_put(int v, struct chash_store_s *t) {
         }
         t->value_store[j] = vs;
         t->n_value++;
-        fprintf(stdout, "value_put: value is inserted in %s\n", LOCAL_HOST);
+        fprintf(stdout, "[info]chash_value_put: value is inserted in %s\n",
+                LOCAL_HOST);
         return 0;
     } else {
         /* 插入的数据不属于本节点，发送给对应节点 */
+        fprintf(stdout,
+                "[info]chash_value_put: value does not belong to this node, send to %s",
+                t->hosts[b].ipv4);
         char data_insert[64] = DATA_INSERT;
         memcpy(data_insert + strlen(DATA_INSERT), &v, sizeof(int));
         size_t len = strlen(DATA_INSERT) + sizeof(int) / sizeof(char);
@@ -357,14 +389,14 @@ int chash_value_put(int v, struct chash_store_s *t) {
 
         char buf[1024];
         struct str_s ss_back = {buf, 1024, 0};
-        ms.messager_recv(ss_back, ss_back.len, &ms);
+        ms.messager_recv(&ss_back, ss_back.len, &ms);
         ms.messager_close(&ms);
         return 0;
     }
 }
 
 /**
- * 查找数据
+ * 查找数据，实现不完全，参考插入
  * @v
  * @t
  * @return index on success, -1 on failure
@@ -411,10 +443,15 @@ int chash_value_delete(int v, struct chash_store_s *t) {
         if (i < t->n_value) {
             t->n_value--;
         }
-        fprintf(stdout, "value_delete: value is deleted in %s\n", LOCAL_HOST);
+        fprintf(stdout,
+                "[info]chash_value_delete: value is deleted in %s\n",
+                LOCAL_HOST);
         return 0;
     } else {
         /* 数据不属于本节点，发送给对应节点 */
+        fprintf(stdout,
+                "[info]chash_value_put: value does not belong to this node, send to %s",
+                t->hosts[b].ipv4);
         char data_delete[64] = DATA_DELETE;
         memcpy(data_delete + strlen(DATA_DELETE), &v, sizeof(int));
         size_t len = strlen(DATA_DELETE) + sizeof(int) / sizeof(char);
@@ -431,7 +468,7 @@ int chash_value_delete(int v, struct chash_store_s *t) {
 
         char buf[1024];
         struct str_s ss_back = { buf, 1024, 0 };
-        ms.messager_recv(ss_back, ss_back.len, &ms);
+        ms.messager_recv(&ss_back, ss_back.len, &ms);
         ms.messager_close(&ms);
         return 0;
     }
@@ -443,7 +480,16 @@ int chash_value_delete(int v, struct chash_store_s *t) {
 void chash_value_sort(struct chash_store_s *t) {
     return ;
 }
-long chash_value_md5(int v, struct chash_store_s *t);
+
+/*
+ * 计算value的hash
+ */
+unsigned long chash_value_hash(int v, struct chash_store_s *t) {
+    unsigned int tmp = (unsigned int)v;
+    char buf[32];
+    itoa(v, buf, 10);
+    return get_md5(buf);
+}
 
 /**
  * 析构函数
@@ -478,11 +524,11 @@ int host_handler(struct chash_store_s *t, char *s) {
 int  chash_cnt_belongs2(char *host, struct chash_store_s *t) {
     struct chash_host node;
     node.ipv4 = host;
-    node.md5 = t->host_md5(host, t);
+    node.hash = t->host_hash(host, t);
 
     int i, cnt = 0;
     for (i = 0; i < t->n_value; i++) {
-        if (t->value_store[i].md5 >= node.md5) {
+        if (t->value_store[i].hash >= node.hash) {
             cnt++;
         }
     }
@@ -495,7 +541,7 @@ int  chash_cnt_belongs2(char *host, struct chash_store_s *t) {
  */
 int* chash_data_belongs2(char *host, struct chash_store_s *t) {
     int cnt = t->cnt_belongs2(host, t);
-    long md5 = t->host_md5(host, t);
+    unsigned long hash = t->host_hash(host, t);
     int *vs = malloc(sizeof(int) * cnt);
     if (!vs) {
         return vs;
@@ -503,7 +549,7 @@ int* chash_data_belongs2(char *host, struct chash_store_s *t) {
 
     int i, j = 0;
     for (i = 0; i < t->n_value; i++) {
-        if (t->value_store[i].md5 >= md5) {
+        if (t->value_store[i].hash >= hash) {
             vs[j++] = t->value_store[i].value;
         }
     }
@@ -517,12 +563,12 @@ int* chash_data_belongs2(char *host, struct chash_store_s *t) {
 int  v_belongs2(int v, struct chash_store_s *cs) {
     struct value_store_s vs;
     vs.value = v;
-    vs.md5 = cs->value_md5(v, cs);
+    vs.hash = cs->value_hash(v, cs);
     uint32_t b, i, j;
 
     /* 找到对应节点 */
     for (b = 0; b < cs->n_host; b++) {
-        if (cs->hosts[b].md5 > vs.md5) {
+        if (cs->hosts[b].hash > vs.hash) {
             break;
         }
     }
@@ -536,7 +582,7 @@ int  v_belongs2(int v, struct chash_store_s *cs) {
     return b;
 }
 
-void chash_value_printf(struct chash_store_s *t) {
+void chash_value_print(struct chash_store_s *t) {
     int i, carry = 10, cnt = 1;
     char *split_line = "---------------------------------------";
     fprintf(stdout, "%s\n", split_line);
@@ -547,5 +593,30 @@ void chash_value_printf(struct chash_store_s *t) {
         }
         fprintf(stdout, "%d ", t->value_store[i].value);
     }
+    fprintf(stdout, "\n");
     fprintf(stdout, "%s\n", split_line);
+}
+
+/*
+ * 根据openssl/md5计算md5
+ */
+unsigned long
+get_md5(char *v) {
+    char input[1024] = { 0 };
+    MD5_CTX x;
+    char out[8] = { 0 };
+    unsigned char d[32];
+
+    strcpy(input, v);
+    MD5_Init(&x);
+    MD5_Update(&x, (char*) input, strlen(input));
+    MD5_Final(d, &x);
+
+    int i = 0;
+    for (i = 0; i < 8; i++) {
+        strncpy(out + i, d + i, 1);
+    }
+    unsigned long n;
+    memcpy(&n, out, 8);
+    return n;
 }

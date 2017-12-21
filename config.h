@@ -10,9 +10,9 @@
 
 #define SRVPORT 	35696
 #define TESTIP  	"127.0.0.1"
-#define LOCAL_HOST 	"192.168.0.122"
-#define SRV_HOST   	"192.168.0.122"
-#define SEED_HOST   "192.168.0.122"
+#define LOCAL_HOST 	"192.168.0.105"
+#define SRV_HOST   	"192.168.0.105"
+#define SEED_HOST   "192.168.0.105"
 
 // command
 #define GOSSIP_HEADER "gossip"

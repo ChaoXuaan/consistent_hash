@@ -8,7 +8,7 @@
 
 #include "gossip.h"
 #include "config.h"
-#include "messager.h"
+#include "message/messager.h"
 #include "util.h"
 #include "networking.h"
 #include "config.h"
@@ -207,12 +207,16 @@ void g_start(struct gossiper_s *this) {
 				idx = get_rand(this->n_host);
 			} while (idx != 0 && idx != pre[0] && idx != pre[1] && idx != pre[2]);
 			pre[i] = idx;
+
 			if (ms[i].messager_init(this->states[idx].host, SRVPORT, &ms[i]) < 0) {
 			    this->states[idx].status=OFFLINE;
 			    this->states[idx].version++;
 			} else {
 			    struct str_s *cur_msg = this->gossiper_cur_msg(this);
                 ms[i].messager_send(*cur_msg, &ms[i]);
+                char buf[1024];
+                struct str_s ss = {buf, 1024, 0};
+                ms[i].messager_recv(&ss, ss.len, &ms[i]);
                 ms[i].messager_close(&ms[i]);
                 free(cur_msg);
 			}
@@ -227,6 +231,9 @@ void g_start(struct gossiper_s *this) {
 			} else {
                 struct str_s *cur_msg = this->gossiper_cur_msg(this);
                 ms[i - 1].messager_send(*cur_msg, &ms[i - 1]);
+                char buf[1024];
+                struct str_s ss = { buf, 1024, 0 };
+                ms[i].messager_recv(&ss, ss.len, &ms[i]);
                 ms[i - 1].messager_close(&ms[i - 1]);
                 free(cur_msg);
 			}

@@ -241,7 +241,7 @@ void accept_cb(int fd, short event, void *arg) {
 	struct raw_data *data;
 	data = alloc_raw_data(base, sockfd);
 	data->cli_addr = client_addr;
-	fprintf(stdout, "[info]client request: %s", inet_ntoa(client_addr.sin_addr));
+	fprintf(stdout, "[info]client request: %s\n", inet_ntoa(client_addr.sin_addr));
 	assert(data);
 	event_add(data->read_event, 0);
 }

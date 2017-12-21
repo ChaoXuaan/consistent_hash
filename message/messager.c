@@ -64,7 +64,7 @@ void m_send(struct str_s msg, struct messager_s *t) {
 		written += len;
 	}
 
-	fprintf(stdout, "[info]m_send success:%s\n", msg.data);
+	fprintf(stdout, "[info]m_send success:%s-%d\n", msg.data, pending);
 }
 
 void m_recv(struct str_s *ret, int len, struct messager_s *t) {

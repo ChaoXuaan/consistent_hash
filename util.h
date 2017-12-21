@@ -22,12 +22,13 @@ struct str_s {
 };
 
 struct value_store_s {
-	int md5;
-	int value;
+    int value;
+    unsigned long hash;
 };
 
 void parse(struct raw_data *data);
 int get_rand(int range);
+char* itoa(unsigned int num, char *str, int radix);
 
 
 #endif /* UTIL_H_ */

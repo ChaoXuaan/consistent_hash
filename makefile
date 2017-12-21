@@ -1,8 +1,9 @@
 CC=gcc
 INCLUDE=.
-CFLAGS=-I$(INCLUDE) -I$(INCLUDE)/message
-LIBS=-levent
-OBJS=networking.o gossip.o util.o message/messager.o
+CFLAGS=-I$(INCLUDE)
+LIBS=-levent -lcrypto
+OBJS=networking.o gossip.o util.o message/messager.o chash/chash.o
+SRC=networking.c gossip.c util.c message/messager.c chash/chash.c
 
 all: networking_test
 
@@ -17,6 +18,9 @@ util.o: util.c util.h gossip.h
 	
 messager.o: message/messager.c message/messager.h networking.h
 	$(CC) $(CFLAGS) -c -o message/messager.o message/messager.c 
+	
+chash.o: chash/chash.c
+	$(CC) $(CFLAGS) -c -o chash/chash.o chash/chash.c
 	
 networking_test.o: test/networking_test.c
 	$(CC) $(CFLAGS) -c -o test/networking_test.o test/networking_test.c -levent
@@ -50,8 +54,17 @@ gdb_gossip_test: test/gossip_test.c
 	$(CC) $(CFLAGS) -g -o test/gdb_gossip_test test/gossip_test.c message/messager.c   \
 	networking.c util.c gossip.c -levent
 	
+chash_test.o: test/consistent_hash_test.c
+	$(CC) $(CFLAGS) -c -o test/chash_test.o test/consistent_hash_test.c
+	
+chash_test: chash_test.o $(OBJS)
+	$(CC) $(CFLAGS) -o test/chash_test test/chash_test.o $(OBJS) $(LIBS)
+	
+gdb_chash_test: test/consistent_hash_test.c
+	$(CC) $(CFLAGS) -g -o test/gdb_chash_test test/consistent_hash_test.c $(SRC) $(LIBS)
+	
 clean:
 	rm $(OBJS) test/networking_test test/*.o test/messager_test test/messager_test_g test/gossip_test \
-	   test/gdb_gossip_test test/range_test
+	   test/gdb_gossip_test test/range_test test/chash_test
 	
 .PHONY: clean
