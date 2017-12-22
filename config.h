@@ -11,9 +11,9 @@
 #define SRVPORT 	35696
 #define LISTEN_NUM  64
 #define TESTIP  	"127.0.0.1"
-#define LOCAL_HOST 	"127.0.0.1"
-#define SRV_HOST   	"127.0.0.1"
-#define SEED_HOST   "127.0.0.1"
+#define LOCAL_HOST 	"192.168.0.105"
+#define SRV_HOST   	"192.168.0.122"
+#define SEED_HOST   "192.168.0.122"
 
 // command
 #define GOSSIP_HEADER "gossip"

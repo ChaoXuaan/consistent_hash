@@ -64,6 +64,6 @@ gdb_chash_test: test/consistent_hash_test.c
 	
 clean:
 	rm $(OBJS) test/networking_test test/*.o test/messager_test test/messager_test_g test/gossip_test \
-	   test/gdb_gossip_test test/range_test test/chash_test
+	   test/gdb_gossip_test test/range_test test/chash_test test/gdb_chash_test
 	
 .PHONY: clean

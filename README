@@ -13,3 +13,8 @@
 哈希函数采用openssl的md5，Ubuntu安装ssl库：sudo apt-get install libssl-dev
 
 链接时需要指明链接的库：-levent -lcrypto
+
+bug list:
+1. 数据有时测试已经发送，但是没有被接收，不知是否网络原因
+2. 数据发送前没有判断节点是否offline
+3. 实测环境下，host_state_s的status,version,generation传输之后都是0，说明可能没有真正内存拷贝成功
