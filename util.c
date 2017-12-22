@@ -110,6 +110,14 @@ void parse(struct raw_data *raw) {
         /* 返回迁移数据 */
         char *cli_addr = inet_ntoa(raw->cli_addr.sin_addr);
         int cnt = ch_store->cnt_belongs2(cli_addr, ch_store);
+        if (cnt == 0) {
+            char *back = "no migrate";
+            memset(raw->write_buf, 0, raw->w_used + 1);
+            memcpy(raw->write_buf, back, strlen(back));
+            raw->w_used = strlen(back);
+            event_add(raw->write_event, NULL);
+            return ;
+        }
         int *data = ch_store->data_belongs2(cli_addr, ch_store);
         assert (data);
         fprintf(stdout, "[info]migrate following data to %s\n", cli_addr);

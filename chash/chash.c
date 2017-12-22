@@ -140,8 +140,15 @@ int  chash_node_insert(struct chash_store_s *t) {
         ss_back.len = 4096;
         ss_back.used = 0;
         ms.messager_recv(&ss_back, ss_back.len, &ms);
-        if (ss_back.used == 0) {
+        if (strcmp(ss_back.data, "no migrate")) {
             fprintf(stdout, "[info]chash_node_insert: has no data to migrate\n");
+            ms.messager_close(&ms);
+
+            free(g_msg->data);
+            free(g_msg);
+            free(ss->data);
+            free(ss);
+            free(ss_back.data);
             return 0;
         }
         /* 收到的是字符串，转换成int数组 */

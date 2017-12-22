@@ -191,10 +191,9 @@ void socket_write_cb(int fd, short event, void *arg) {
 	int written = 0, pending = data->w_used;
 
 	// fprintf(stdout, "write_buf: %s\n", data->write_buf);
-
+	fprintf(stdout, "written: %d\n", written);
+	fprintf(stdout, "pending: %d\n", pending);
 	while (written < pending) {
-		fprintf(stdout, "written: %d\n", written);
-		fprintf(stdout, "pending: %d\n", pending);
 		ssize_t len = send(fd, data->write_buf + written,
 				         pending - written, 0);
 		if (len < 0) {
